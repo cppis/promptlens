@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PromptCraft — Prototype</title>
+  <style>
+    /* ============================================================
+       PromptCraft Prototype — Single-file CSS
+       Chrome Extension Popup 스타일을 시뮬레이션
+       ============================================================ */
+    :root {
+      /* Ayu Dark — Terminal Console Style */
+      --c-bg: #0a0e14;
+      --c-surface: #0d1017;
+      --c-surface2: #131721;
+      --c-border: #1c2433;
+      --c-text: #b3b1ad;
+      --c-text-dim: #475263;
+      --c-accent: #e6b450;
+      --c-accent-hover: #ffb454;
+      --c-green: #91b362;
+      --c-green-bg: rgba(145, 179, 98, 0.08);
+      --c-yellow: #ff8f40;
+      --c-yellow-bg: rgba(255, 143, 64, 0.08);
+      --c-red: #f07178;
+      --c-red-bg: rgba(240, 113, 120, 0.08);
+      --c-orange: #ff8f40;
+      --c-blue: #59c2ff;
+      --c-purple: #d2a6ff;
+      --c-cyan: #95e6cb;
+      --radius: 3px;
+      --shadow: none;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', 'SF Mono', monospace;
+      background: #000b0f;
+      color: var(--c-text);
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px;
+      min-height: 100vh;
+    }
+
+    #app {
+      width: 480px;
+      background: var(--c-bg);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid var(--c-border);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--c-surface);
+      border-bottom: 1px solid var(--c-border);
+    }
+    .header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--c-accent);
+      font-family: inherit;
+      letter-spacing: 0.5px;
+    }
+    .header h1::before { content: '>_ '; color: var(--c-text-dim); }
+    .header-icons { display: flex; gap: 4px; }
+    .header-icons button {
+      background: transparent;
+      border: 1px solid var(--c-border);
+      color: var(--c-text-dim);
+      width: 28px; height: 28px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    .header-icons button:hover {
+      color: var(--c-accent);
+      border-color: var(--c-accent);
+      background: transparent;
+    }
+    .header-icons button.active {
+      color: var(--c-accent);
+      border-color: var(--c-accent);
+      background: transparent;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--c-border);
+      background: var(--c-surface);
+    }
+    .tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--c-text-dim);
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: all 0.15s;
+      letter-spacing: 0.3px;
+    }
+    .tab:hover { color: var(--c-text); }
+    .tab.active {
+      color: var(--c-accent);
+      border-bottom-color: var(--c-accent);
+      font-weight: 600;
+    }
+
+    /* Content area */
+    .content { padding: 20px; }
+
+    /* Input area */
+    .input-group { margin-bottom: 16px; }
+    .input-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--c-text-dim);
+      margin-bottom: 6px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .input-group label::before { content: '# '; color: var(--c-green); }
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      color: var(--c-text);
+      padding: 12px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--c-accent);
+      box-shadow: 0 0 0 1px rgba(230, 180, 80, 0.15);
+    }
+    textarea::placeholder { color: var(--c-text-dim); opacity: 0.5; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all 0.1s;
+      letter-spacing: 0.3px;
+    }
+    .btn-primary {
+      background: rgba(230, 180, 80, 0.12);
+      color: var(--c-accent);
+      border: 1px solid rgba(230, 180, 80, 0.3);
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-primary:hover {
+      background: rgba(230, 180, 80, 0.2);
+      border-color: var(--c-accent);
+    }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--c-text-dim);
+      border: 1px solid var(--c-border);
+    }
+    .btn-secondary:hover { color: var(--c-text); border-color: var(--c-text-dim); }
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .btn-group .btn { flex: 1; justify-content: center; }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px;
+      gap: 12px;
+    }
+    .spinner {
+      font-size: 18px;
+      color: var(--c-accent);
+      animation: blink 0.6s step-end infinite;
+    }
+    .spinner::after { content: '_'; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .loading-text { color: var(--c-text-dim); font-size: 11px; letter-spacing: 0.3px; }
+
+    /* Report sections */
+    .report-section {
+      margin-bottom: 12px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border-left: 2px solid transparent;
+    }
+    .report-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+    }
+    .report-header .badge {
+      background: rgba(255,255,255,0.08);
+      padding: 1px 6px;
+      border-radius: var(--radius);
+      font-size: 10px;
+      font-weight: 400;
+    }
+    .report-header .arrow {
+      margin-left: auto;
+      transition: transform 0.2s;
+      font-size: 10px;
+    }
+    .report-header.collapsed .arrow { transform: rotate(-90deg); }
+
+    .report-items { padding: 0 12px 10px; }
+    .report-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .report-item:last-child { border-bottom: none; }
+    .report-item .dot {
+      width: 4px; height: 4px;
+      border-radius: 1px;
+      margin-top: 7px;
+      flex-shrink: 0;
+    }
+    .report-item .term { font-weight: 600; color: var(--c-text); }
+    .report-item .desc { color: var(--c-text-dim); }
+    .report-item .confidence {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: var(--radius);
+      margin-left: 4px;
+    }
+
+    /* Green section */
+    .section-green { background: var(--c-green-bg); border-left-color: var(--c-green); }
+    .section-green .report-header { color: var(--c-green); }
+    .section-green .dot { background: var(--c-green); }
+
+    /* Yellow section */
+    .section-yellow { background: var(--c-yellow-bg); border-left-color: var(--c-yellow); }
+    .section-yellow .report-header { color: var(--c-yellow); }
+    .section-yellow .dot { background: var(--c-yellow); }
+
+    /* Red section */
+    .section-red { background: var(--c-red-bg); border-left-color: var(--c-red); }
+    .section-red .report-header { color: var(--c-red); }
+    .section-red .dot { background: var(--c-red); }
+
+    .auto-fill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      color: var(--c-green);
+      background: var(--c-green-bg);
+      padding: 1px 6px;
+      border-radius: var(--radius);
+      margin-left: 6px;
+      border: 1px solid rgba(145, 179, 98, 0.2);
+    }
+
+    /* Enhanced prompt preview */
+    .enhanced-prompt {
+      margin-top: 14px;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .enhanced-prompt-header {
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--c-cyan);
+      background: var(--c-surface2);
+      border-bottom: 1px solid var(--c-border);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .enhanced-prompt pre {
+      padding: 12px;
+      font-size: 11px;
+      line-height: 1.7;
+      color: var(--c-text);
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: inherit;
+    }
+
+    /* Profile page */
+    .profile-card {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-left: 2px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 10px;
+      transition: border-color 0.15s;
+    }
+    .profile-card.active { border-left-color: var(--c-accent); }
+    .profile-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .profile-card-header h3 { font-size: 12px; font-weight: 600; color: var(--c-text); }
+    .profile-status {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: var(--radius);
+      letter-spacing: 0.3px;
+    }
+    .profile-status.on {
+      background: var(--c-green-bg);
+      color: var(--c-green);
+      border: 1px solid rgba(145, 179, 98, 0.2);
+    }
+    .profile-status.off {
+      background: transparent;
+      color: var(--c-text-dim);
+      border: 1px solid var(--c-border);
+    }
+    .profile-meta {
+      font-size: 11px;
+      color: var(--c-text-dim);
+      line-height: 1.6;
+    }
+    .profile-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .profile-tag {
+      font-size: 10px;
+      padding: 1px 6px;
+      background: var(--c-surface2);
+      border-radius: var(--radius);
+      color: var(--c-text-dim);
+      border: 1px solid var(--c-border);
+    }
+    .profile-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      justify-content: flex-end;
+    }
+
+    /* Profile form */
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--c-text-dim);
+      margin-bottom: 4px;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      color: var(--c-text);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: var(--c-accent);
+      box-shadow: 0 0 0 1px rgba(230, 180, 80, 0.15);
+    }
+    .form-group textarea { min-height: 50px; resize: vertical; }
+    .form-group input::placeholder, .form-group textarea::placeholder {
+      color: var(--c-text-dim);
+      opacity: 0.5;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--c-surface2);
+      border: 1px solid var(--c-accent);
+      color: var(--c-accent);
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 11px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+      transition: transform 0.2s ease;
+      z-index: 1000;
+      letter-spacing: 0.3px;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* Separator */
+    .divider {
+      height: 1px;
+      background: var(--c-border);
+      margin: 16px 0;
+    }
+
+    /* Context indicator */
+    .context-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: rgba(230, 180, 80, 0.05);
+      border: 1px solid rgba(230, 180, 80, 0.15);
+      border-radius: var(--radius);
+      font-size: 11px;
+      color: var(--c-accent);
+      margin-bottom: 12px;
+    }
+    .context-indicator .dot-pulse {
+      width: 5px; height: 5px;
+      background: var(--c-accent);
+      border-radius: 1px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hidden { display: none !important; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--c-surface2); border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <h1>PromptCraft</h1>
+    <div class="header-icons">
+      <button id="btnSettings" title="Settings">&#9881;</button>
+      <button id="btnProfile" title="Profile">&#9787;</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-tab="analyze">&#128270; 분석</div>
+    <div class="tab" data-tab="profiles">&#128100; 프로필</div>
+  </div>
+
+  <!-- Page: Analyze -->
+  <div id="page-analyze" class="content">
+    <!-- Active profile indicator -->
+    <div id="contextIndicator" class="context-indicator hidden">
+      <span class="dot-pulse"></span>
+      <span id="activeProfileName">웹 개발 프로젝트</span> 맥락 활성
+    </div>
+
+    <div class="input-group">
+      <label>프롬프트를 입력하세요</label>
+      <textarea id="promptInput" placeholder="예: React로 로그인 폼 만들어줘&#10;예: Python으로 REST API 서버 만들어줘&#10;예: 게시판 기능을 추가해줘"></textarea>
+    </div>
+    <button id="btnAnalyze" class="btn btn-primary">&#9889; 분석하기</button>
+
+    <!-- Loading -->
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <div class="loading-text">> analyzing prompt...</div>
+    </div>
+
+    <!-- Analysis Result -->
+    <div id="analysisResult" class="hidden">
+      <!-- Referenced -->
+      <div class="report-section section-green" id="sectionGreen">
+        <div class="report-header" onclick="toggleSection('sectionGreen')">
+          &#9989; 이해한 것 <span class="badge" id="greenCount">0</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="report-items" id="greenItems"></div>
+      </div>
+
+      <!-- Inferred -->
+      <div class="report-section section-yellow" id="sectionYellow">
+        <div class="report-header" onclick="toggleSection('sectionYellow')">
+          &#128161; 추론한 것 <span class="badge" id="yellowCount">0</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="report-items" id="yellowItems"></div>
+      </div>
+
+      <!-- Missing -->
+      <div class="report-section section-red" id="sectionRed">
+        <div class="report-header" onclick="toggleSection('sectionRed')">
+          &#10071; 부족한 것 <span class="badge" id="redCount">0</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="report-items" id="redItems"></div>
+      </div>
+
+      <!-- Enhanced Prompt -->
+      <div class="enhanced-prompt">
+        <div class="enhanced-prompt-header">&#9997; 보강된 프롬프트</div>
+        <pre id="enhancedPromptText"></pre>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-sm" onclick="copyEnhancedPrompt()">&#128203; 프롬프트 복사</button>
+        <button class="btn btn-primary btn-sm" onclick="showToast('AI 채팅창에 전송되었습니다!')">&#128640; AI에 전송</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page: Profiles -->
+  <div id="page-profiles" class="content hidden">
+    <div id="profileList"></div>
+    <button class="btn btn-primary" onclick="showProfileForm()">+ 새 프로필</button>
+
+    <!-- Profile Form -->
+    <div id="profileForm" class="hidden" style="margin-top: 16px;">
+      <div class="divider"></div>
+      <div class="form-group">
+        <label>프로필 이름</label>
+        <input id="pf-name" placeholder="예: 웹 개발 프로젝트" />
+      </div>
+      <div class="form-group">
+        <label>역할</label>
+        <input id="pf-role" placeholder="예: 시니어 백엔드 개발자" />
+      </div>
+      <div class="form-group">
+        <label>도메인</label>
+        <input id="pf-domain" placeholder="예: 핀테크, 에듀테크" />
+      </div>
+      <div class="form-group">
+        <label>기술 스택 (쉼표 구분)</label>
+        <input id="pf-tech" placeholder="예: React, TypeScript, Node.js, PostgreSQL" />
+      </div>
+      <div class="form-group">
+        <label>선호 스타일</label>
+        <input id="pf-prefs" placeholder="예: 코드는 TypeScript, 설명은 한국어" />
+      </div>
+      <div class="form-group">
+        <label>추가 맥락</label>
+        <textarea id="pf-custom" placeholder="자유롭게 입력하세요"></textarea>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-sm" onclick="hideProfileForm()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="saveProfile()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+// ============================================================
+// PromptCraft Prototype — Client-side Logic
+// ============================================================
+
+const API_URL = 'http://localhost:3000';
+
+// ── State ────────────────────────────────────────────────────
+let profiles = [
+  {
+    id: 'default-1',
+    name: '웹 개발 프로젝트',
+    role: '시니어 프론트엔드 개발자',
+    domain: '에듀테크',
+    techStack: ['React', 'TypeScript', 'Tailwind', 'Node.js', 'PostgreSQL'],
+    preferences: '코드는 TypeScript, 설명은 한국어, 간결하게',
+    customContext: 'pnpm monorepo 구조 사용, ESLint + Prettier 적용',
+    isActive: true,
+  },
+  {
+    id: 'default-2',
+    name: '마케팅 업무',
+    role: '콘텐츠 마케터',
+    domain: 'SaaS',
+    techStack: ['SEO', 'Google Analytics', '블로그'],
+    preferences: '한국어, 전문적이면서 친근한 톤',
+    customContext: '',
+    isActive: false,
+  },
+];
+let editingProfileId = null;
+
+// ── Tab Navigation ───────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const page = tab.dataset.tab;
+    document.getElementById('page-analyze').classList.toggle('hidden', page !== 'analyze');
+    document.getElementById('page-profiles').classList.toggle('hidden', page !== 'profiles');
+    if (page === 'profiles') renderProfiles();
+  });
+});
+
+document.getElementById('btnProfile').addEventListener('click', () => {
+  document.querySelector('[data-tab="profiles"]').click();
+});
+
+// ── Analysis ─────────────────────────────────────────────────
+document.getElementById('btnAnalyze').addEventListener('click', analyze);
+document.getElementById('promptInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) analyze();
+});
+
+async function analyze() {
+  const prompt = document.getElementById('promptInput').value.trim();
+  if (!prompt) return;
+
+  const btn = document.getElementById('btnAnalyze');
+  btn.disabled = true;
+  document.getElementById('analysisResult').classList.add('hidden');
+  document.getElementById('loading').classList.remove('hidden');
+
+  const activeProfile = profiles.find(p => p.isActive);
+  const context = activeProfile ? {
+    role: activeProfile.role,
+    domain: activeProfile.domain,
+    techStack: activeProfile.techStack,
+    preferences: activeProfile.preferences,
+    customContext: activeProfile.customContext,
+  } : null;
+
+  try {
+    const res = await fetch(`${API_URL}/api/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, context }),
+    });
+    const data = await res.json();
+    renderReport(data);
+  } catch (err) {
+    showToast('API 서버에 연결할 수 없습니다. 서버를 시작했는지 확인하세요.');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('loading').classList.add('hidden');
+  }
+}
+
+function renderReport(data) {
+  // Referenced (Green)
+  const greenItems = document.getElementById('greenItems');
+  greenItems.innerHTML = '';
+  document.getElementById('greenCount').textContent = data.referenced.length;
+  data.referenced.forEach(item => {
+    greenItems.innerHTML += `
+      <div class="report-item">
+        <div class="dot" style="background: var(--c-green)"></div>
+        <div><span class="term">${escHtml(item.term)}</span> — <span class="desc">${escHtml(item.explanation)}</span></div>
+      </div>`;
+  });
+
+  // Inferred (Yellow)
+  const yellowItems = document.getElementById('yellowItems');
+  yellowItems.innerHTML = '';
+  document.getElementById('yellowCount').textContent = data.inferred.length;
+  data.inferred.forEach(item => {
+    const confColor = { high: 'var(--c-green)', medium: 'var(--c-yellow)', low: 'var(--c-red)' }[item.confidence] || 'var(--c-text-dim)';
+    const confLabel = { high: '높음', medium: '보통', low: '낮음' }[item.confidence] || item.confidence;
+    yellowItems.innerHTML += `
+      <div class="report-item">
+        <div class="dot" style="background: var(--c-yellow)"></div>
+        <div>
+          <span class="term">${escHtml(item.term)}</span> — <span class="desc">${escHtml(item.explanation)}</span>
+          <span class="confidence" style="color:${confColor}; background:${confColor}22">${confLabel}</span>
+        </div>
+      </div>`;
+  });
+
+  // Missing (Red)
+  const redItems = document.getElementById('redItems');
+  redItems.innerHTML = '';
+  document.getElementById('redCount').textContent = data.missing.length;
+  data.missing.forEach(item => {
+    const autoFill = item.autoFillable
+      ? `<span class="auto-fill-badge">&#10003; 프로필에서 자동 보충: ${escHtml(item.profileValue)}</span>`
+      : '';
+    redItems.innerHTML += `
+      <div class="report-item">
+        <div class="dot" style="background: var(--c-red)"></div>
+        <div>
+          <span class="term">${escHtml(item.field)}</span> — <span class="desc">${escHtml(item.suggestion)}</span>
+          ${autoFill}
+        </div>
+      </div>`;
+  });
+
+  // Enhanced prompt
+  document.getElementById('enhancedPromptText').textContent = data.enhancedPrompt;
+
+  document.getElementById('analysisResult').classList.remove('hidden');
+}
+
+function toggleSection(id) {
+  const section = document.getElementById(id);
+  const header = section.querySelector('.report-header');
+  const items = section.querySelector('.report-items');
+  header.classList.toggle('collapsed');
+  items.classList.toggle('hidden');
+}
+
+function copyEnhancedPrompt() {
+  const text = document.getElementById('enhancedPromptText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('보강된 프롬프트가 클립보드에 복사되었습니다!');
+  });
+}
+
+// ── Profiles ─────────────────────────────────────────────────
+function renderProfiles() {
+  const list = document.getElementById('profileList');
+  list.innerHTML = '';
+  profiles.forEach(p => {
+    list.innerHTML += `
+      <div class="profile-card ${p.isActive ? 'active' : ''}">
+        <div class="profile-card-header">
+          <h3>${escHtml(p.name)}</h3>
+          <span class="profile-status ${p.isActive ? 'on' : 'off'}">${p.isActive ? '&#9679; 활성' : '&#9675; 비활성'}</span>
+        </div>
+        <div class="profile-meta">
+          ${escHtml(p.role)} &middot; ${escHtml(p.domain)}
+        </div>
+        <div class="profile-tags">
+          ${p.techStack.map(t => `<span class="profile-tag">${escHtml(t)}</span>`).join('')}
+        </div>
+        <div class="profile-meta" style="margin-top:6px;">${escHtml(p.preferences)}</div>
+        <div class="profile-actions">
+          ${!p.isActive ? `<button class="btn btn-secondary btn-sm" onclick="activateProfile('${p.id}')">활성화</button>` : ''}
+          <button class="btn btn-secondary btn-sm" onclick="editProfile('${p.id}')">편집</button>
+          <button class="btn btn-secondary btn-sm" onclick="deleteProfile('${p.id}')" style="color:var(--c-red)">삭제</button>
+        </div>
+      </div>`;
+  });
+  updateContextIndicator();
+}
+
+function activateProfile(id) {
+  profiles.forEach(p => p.isActive = (p.id === id));
+  renderProfiles();
+  showToast('프로필이 활성화되었습니다.');
+}
+
+function deleteProfile(id) {
+  profiles = profiles.filter(p => p.id !== id);
+  renderProfiles();
+  showToast('프로필이 삭제되었습니다.');
+}
+
+function editProfile(id) {
+  const p = profiles.find(pr => pr.id === id);
+  if (!p) return;
+  editingProfileId = id;
+  document.getElementById('pf-name').value = p.name;
+  document.getElementById('pf-role').value = p.role;
+  document.getElementById('pf-domain').value = p.domain;
+  document.getElementById('pf-tech').value = p.techStack.join(', ');
+  document.getElementById('pf-prefs').value = p.preferences;
+  document.getElementById('pf-custom').value = p.customContext;
+  document.getElementById('profileForm').classList.remove('hidden');
+}
+
+function showProfileForm() {
+  editingProfileId = null;
+  document.getElementById('pf-name').value = '';
+  document.getElementById('pf-role').value = '';
+  document.getElementById('pf-domain').value = '';
+  document.getElementById('pf-tech').value = '';
+  document.getElementById('pf-prefs').value = '';
+  document.getElementById('pf-custom').value = '';
+  document.getElementById('profileForm').classList.remove('hidden');
+}
+
+function hideProfileForm() {
+  document.getElementById('profileForm').classList.add('hidden');
+  editingProfileId = null;
+}
+
+function saveProfile() {
+  const name = document.getElementById('pf-name').value.trim();
+  const role = document.getElementById('pf-role').value.trim();
+  const domain = document.getElementById('pf-domain').value.trim();
+  const techStack = document.getElementById('pf-tech').value.split(',').map(s => s.trim()).filter(Boolean);
+  const preferences = document.getElementById('pf-prefs').value.trim();
+  const customContext = document.getElementById('pf-custom').value.trim();
+
+  if (!name) { showToast('프로필 이름을 입력하세요.'); return; }
+
+  if (editingProfileId) {
+    const p = profiles.find(pr => pr.id === editingProfileId);
+    if (p) { Object.assign(p, { name, role, domain, techStack, preferences, customContext }); }
+  } else {
+    profiles.push({
+      id: 'p-' + Date.now(),
+      name, role, domain, techStack, preferences, customContext,
+      isActive: profiles.length === 0,
+    });
+  }
+
+  hideProfileForm();
+  renderProfiles();
+  showToast(editingProfileId ? '프로필이 수정되었습니다.' : '새 프로필이 추가되었습니다.');
+}
+
+function updateContextIndicator() {
+  const active = profiles.find(p => p.isActive);
+  const indicator = document.getElementById('contextIndicator');
+  if (active) {
+    indicator.classList.remove('hidden');
+    document.getElementById('activeProfileName').textContent = active.name;
+  } else {
+    indicator.classList.add('hidden');
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ── Utils ────────────────────────────────────────────────────
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+// ── Init ─────────────────────────────────────────────────────
+updateContextIndicator();
+</script>
+
+</body>
+</html>
