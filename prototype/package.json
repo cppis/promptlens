@@ -1,13 +1,9 @@
 {
-  "name": "promptcraft-prototype",
+  "name": "promptlens-prototype",
   "private": true,
+  "description": "PromptLens BYOK prototype — no server required",
   "scripts": {
-    "server": "node server/index.mjs",
-    "client": "npx http-server client -p 3001 -c-1",
-    "dev": "node server/index.mjs & npx http-server client -p 3001 -c-1"
-  },
-  "dependencies": {
-    "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "dev": "npx http-server client -p 3001 -c-1 -o",
+    "start": "npx http-server client -p 3001 -c-1"
   }
 }

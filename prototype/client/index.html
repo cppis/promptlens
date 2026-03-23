@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PromptCraft — Prototype</title>
+  <title>PromptLens — BYOK Prototype</title>
   <style>
     /* ============================================================
-       PromptCraft Prototype — Single-file CSS
-       Chrome Extension Popup 스타일을 시뮬레이션
+       PromptLens BYOK — Single-file CSS
+       Ayu Dark Terminal Console Style
        ============================================================ */
     :root {
       /* Ayu Dark — Terminal Console Style */
@@ -118,7 +118,7 @@
     }
 
     /* Content area */
-    .content { padding: 20px; }
+    .content { padding: 20px; max-height: 600px; overflow-y: auto; }
 
     /* Input area */
     .input-group { margin-bottom: 16px; }
@@ -328,6 +328,22 @@
       font-family: inherit;
     }
 
+    /* Usage stats */
+    .usage-stats {
+      padding: 8px 12px;
+      background: var(--c-surface2);
+      border-top: 1px solid var(--c-border);
+      font-size: 10px;
+      color: var(--c-text-dim);
+    }
+    .usage-stat-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+    }
+    .usage-stat-label { color: var(--c-text-dim); }
+    .usage-stat-value { color: var(--c-text); font-weight: 500; }
+
     /* Profile page */
     .profile-card {
       background: var(--c-surface);
@@ -388,7 +404,7 @@
       justify-content: flex-end;
     }
 
-    /* Profile form */
+    /* Form */
     .form-group { margin-bottom: 12px; }
     .form-group label {
       display: block;
@@ -396,7 +412,7 @@
       color: var(--c-text-dim);
       margin-bottom: 4px;
     }
-    .form-group input, .form-group textarea {
+    .form-group input, .form-group textarea, .form-group select {
       width: 100%;
       background: var(--c-surface);
       border: 1px solid var(--c-border);
@@ -406,7 +422,7 @@
       font-size: 12px;
       font-family: inherit;
     }
-    .form-group input:focus, .form-group textarea:focus {
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
       outline: none;
       border-color: var(--c-accent);
       box-shadow: 0 0 0 1px rgba(230, 180, 80, 0.15);
@@ -416,6 +432,22 @@
       color: var(--c-text-dim);
       opacity: 0.5;
     }
+    .form-group select { color: var(--c-text); }
+    .form-group select option { background: var(--c-surface2); color: var(--c-text); }
+
+    /* Toggle switch */
+    .toggle-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .toggle-switch input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      cursor: pointer;
+    }
+    .toggle-switch label { margin: 0; cursor: pointer; }
 
     /* Toast */
     .toast {
@@ -467,6 +499,93 @@
       50% { opacity: 0.3; }
     }
 
+    /* Banner */
+    .banner {
+      padding: 8px 12px;
+      background: rgba(255, 143, 64, 0.08);
+      border: 1px solid rgba(255, 143, 64, 0.3);
+      border-radius: var(--radius);
+      font-size: 11px;
+      color: var(--c-orange);
+      margin-bottom: 12px;
+    }
+
+    /* Modal / Dialog */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      padding: 20px;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    }
+    .modal-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--c-accent);
+      margin-bottom: 12px;
+    }
+    .modal-content {
+      font-size: 12px;
+      color: var(--c-text);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .modal-field {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--c-border);
+      font-size: 11px;
+    }
+    .modal-field:last-child { border-bottom: none; }
+    .modal-field-label { color: var(--c-text-dim); }
+    .modal-field-value { color: var(--c-text); font-weight: 500; }
+    .modal-footer {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      justify-content: flex-end;
+    }
+    .modal-footer .btn { width: auto; }
+
+    /* Onboarding */
+    .onboarding {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .onboarding-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--c-accent);
+      margin-bottom: 8px;
+    }
+    .onboarding-desc {
+      font-size: 12px;
+      color: var(--c-text-dim);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .onboarding-form {
+      width: 100%;
+    }
+
     .hidden { display: none !important; }
 
     /* Scrollbar */
@@ -480,9 +599,9 @@
 <div id="app">
   <!-- Header -->
   <div class="header">
-    <h1>PromptCraft</h1>
+    <h1>PromptLens</h1>
     <div class="header-icons">
-      <button id="btnSettings" title="Settings">&#9881;</button>
+      <button id="btnSettings" title="Settings">⚙</button>
       <button id="btnProfile" title="Profile">&#9787;</button>
     </div>
   </div>
@@ -491,10 +610,16 @@
   <div class="tabs">
     <div class="tab active" data-tab="analyze">&#128270; 분석</div>
     <div class="tab" data-tab="profiles">&#128100; 프로필</div>
+    <div class="tab" data-tab="settings">⚙ 설정</div>
   </div>
 
   <!-- Page: Analyze -->
   <div id="page-analyze" class="content">
+    <!-- Mock mode banner -->
+    <div id="mockBanner" class="banner hidden">
+      Mock 모드 — API 키를 등록하면 Claude로 분석합니다
+    </div>
+
     <!-- Active profile indicator -->
     <div id="contextIndicator" class="context-indicator hidden">
       <span class="dot-pulse"></span>
@@ -546,6 +671,7 @@
       <div class="enhanced-prompt">
         <div class="enhanced-prompt-header">&#9997; 보강된 프롬프트</div>
         <pre id="enhancedPromptText"></pre>
+        <div id="usageStats" class="usage-stats hidden"></div>
       </div>
 
       <div class="btn-group">
@@ -593,69 +719,390 @@
       </div>
     </div>
   </div>
+
+  <!-- Page: Settings -->
+  <div id="page-settings" class="content hidden">
+    <!-- API Key Section -->
+    <div class="form-group">
+      <label style="color: var(--c-green);">🔑 API 키</label>
+      <div style="display: flex; gap: 6px; margin-top: 8px;">
+        <input id="settingsApiKey" type="password" placeholder="sk-ant-..." style="flex: 1;" />
+        <button class="btn btn-secondary btn-sm" onclick="toggleApiKeyVisibility()">&#128065;</button>
+      </div>
+      <div style="font-size: 10px; color: var(--c-text-dim); margin-top: 4px;">
+        키는 이 브라우저에만 저장됩니다
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 8px;">
+        <button class="btn btn-secondary btn-sm" onclick="validateApiKey()">검증</button>
+        <button class="btn btn-secondary btn-sm" onclick="deleteApiKey()" style="color: var(--c-red);">삭제</button>
+      </div>
+      <div id="apiKeyStatus" style="font-size: 10px; margin-top: 6px; color: var(--c-text-dim);"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Model Selection -->
+    <div class="form-group">
+      <label>📋 모델</label>
+      <select id="settingsModel" style="margin-top: 8px;">
+        <option value="claude-sonnet-4-6">claude-sonnet-4-6 (기본)</option>
+        <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+      </select>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Cost Control -->
+    <div class="form-group">
+      <label style="color: var(--c-yellow);">💰 비용 제어</label>
+
+      <div class="toggle-switch" style="margin-top: 12px;">
+        <input type="checkbox" id="costCheckToggle" checked />
+        <label for="costCheckToggle">분석 전 비용 확인</label>
+      </div>
+
+      <label style="font-size: 11px; margin-top: 12px;">일일 예산</label>
+      <div style="display: flex; gap: 4px; margin-top: 6px;">
+        <span style="color: var(--c-text-dim);">$</span>
+        <input id="dailyBudget" type="number" step="0.01" min="0" placeholder="1.00" style="flex: 1;" />
+      </div>
+
+      <label style="font-size: 11px; margin-top: 12px;">자동 승인 한도</label>
+      <div style="display: flex; gap: 4px; margin-top: 6px;">
+        <span style="color: var(--c-text-dim);">$</span>
+        <input id="autoApproveThreshold" type="number" step="0.001" min="0" placeholder="0.01" style="flex: 1;" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Usage Display -->
+    <div class="form-group">
+      <label style="color: var(--c-cyan);">📊 사용량</label>
+      <div style="margin-top: 12px; font-size: 11px;">
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; color: var(--c-text-dim);">
+          <span>오늘</span>
+          <span id="usageToday" style="color: var(--c-text);">0 분석 • $0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; color: var(--c-text-dim);">
+          <span>이번 주</span>
+          <span id="usageWeek" style="color: var(--c-text);">0 분석 • $0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; color: var(--c-text-dim);">
+          <span>이번 달</span>
+          <span id="usageMonth" style="color: var(--c-text);">0 분석 • $0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Settings -->
+    <div class="btn-group" style="margin-top: 16px;">
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">저장</button>
+    </div>
+  </div>
 </div>
 
 <!-- Toast -->
 <div id="toast" class="toast"></div>
 
+<!-- Cost Confirmation Modal -->
+<div id="costModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">💰 비용 확인</div>
+    <div class="modal-content">
+      <div class="modal-field">
+        <span class="modal-field-label">모델</span>
+        <span class="modal-field-value" id="costModalModel">Sonnet</span>
+      </div>
+      <div class="modal-field">
+        <span class="modal-field-label">예상 입력</span>
+        <span class="modal-field-value" id="costModalInputTokens">~250 토큰</span>
+      </div>
+      <div class="modal-field">
+        <span class="modal-field-label">예상 출력</span>
+        <span class="modal-field-value" id="costModalOutputTokens">~500 토큰</span>
+      </div>
+      <div class="modal-field">
+        <span class="modal-field-label">예상 비용</span>
+        <span class="modal-field-value" id="costModalEstimate">$0.003</span>
+      </div>
+      <div class="modal-field" style="background: rgba(145, 179, 98, 0.08); padding: 6px; margin: 8px -6px 0;">
+        <span class="modal-field-label">오늘 누적</span>
+        <span class="modal-field-value" id="costModalDaily">$0.05 / $1.00</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeCostModal()">취소</button>
+      <button class="btn btn-primary btn-sm" onclick="proceedWithAnalysis()">분석 실행</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
-// PromptCraft Prototype — Client-side Logic
+// PromptLens BYOK — Client-side Logic
 // ============================================================
 
-const API_URL = 'http://localhost:3000';
+// ── Storage Keys ─────────────────────────────────────────
+const STORAGE_API_KEY = 'promptcraft_api_key';
+const STORAGE_SETTINGS = 'promptcraft_settings';
+const STORAGE_PROFILES = 'promptcraft_profiles';
+const STORAGE_USAGE = 'promptcraft_usage';
 
-// ── State ────────────────────────────────────────────────────
-let profiles = [
-  {
-    id: 'default-1',
-    name: '웹 개발 프로젝트',
-    role: '시니어 프론트엔드 개발자',
-    domain: '에듀테크',
-    techStack: ['React', 'TypeScript', 'Tailwind', 'Node.js', 'PostgreSQL'],
-    preferences: '코드는 TypeScript, 설명은 한국어, 간결하게',
-    customContext: 'pnpm monorepo 구조 사용, ESLint + Prettier 적용',
-    isActive: true,
-  },
-  {
-    id: 'default-2',
-    name: '마케팅 업무',
-    role: '콘텐츠 마케터',
-    domain: 'SaaS',
-    techStack: ['SEO', 'Google Analytics', '블로그'],
-    preferences: '한국어, 전문적이면서 친근한 톤',
-    customContext: '',
-    isActive: false,
-  },
+// ── Model Pricing (input/output per 1M tokens) ───────────
+const MODEL_PRICING = {
+  'claude-sonnet-4-6': { inputCost: 3, outputCost: 15 },
+  'claude-haiku-4-5': { inputCost: 0.80, outputCost: 4 },
+};
+
+// ── Known Terms & Rules (for mock analysis) ──────────────
+const KNOWN_TERMS = {
+  'React': '리액트 라이브러리',
+  'Python': '파이썬 프로그래밍 언어',
+  'REST API': 'HTTP 기반 API 아키텍처',
+  'TypeScript': '정적 타입 JavaScript',
+  'Node.js': 'JavaScript 런타임',
+  'PostgreSQL': '오픈소스 관계형 DB',
+  '로그인': '사용자 인증 기능',
+  '폼': 'HTML 입력 요소',
+  '프로필': '사용자 정보 페이지',
+};
+
+const INFERENCE_RULES = [
+  { pattern: /로그인|인증/, inferred: '사용자 계정 관리', confidence: 'high' },
+  { pattern: /API|서버/, inferred: '백엔드 구현 필요', confidence: 'high' },
+  { pattern: /UI|폼|버튼/, inferred: '프론트엔드 구현', confidence: 'medium' },
+  { pattern: /성능|최적화/, inferred: '코드 리팩토링 고려', confidence: 'medium' },
 ];
+
+const MISSING_INFO_RULES = [
+  { pattern: /React/, missing: '사용할 상태 관리 라이브러리?', suggestion: 'Redux, Zustand, Recoil 등 명시' },
+  { pattern: /API/, missing: '인증 방식 (JWT, OAuth 등)?', suggestion: '인증 메커니즘 결정' },
+  { pattern: /로그인|폼/, missing: '데이터 유효성 검증 방식?', suggestion: 'Zod, Yup 등 라이브러리 선택' },
+  { pattern: /스타일/, missing: '디자인 시스템 정의?', suggestion: 'Tailwind, styled-components 등 선택' },
+];
+
+// ── State ────────────────────────────────────────────────
+let profiles = [];
 let editingProfileId = null;
+let settings = {
+  model: 'claude-sonnet-4-6',
+  costCheckEnabled: true,
+  dailyBudget: 1.00,
+  autoApproveThreshold: 0.01,
+};
+let pendingAnalysis = null;
 
-// ── Tab Navigation ───────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    const page = tab.dataset.tab;
-    document.getElementById('page-analyze').classList.toggle('hidden', page !== 'analyze');
-    document.getElementById('page-profiles').classList.toggle('hidden', page !== 'profiles');
-    if (page === 'profiles') renderProfiles();
+// ── Init ─────────────────────────────────────────────────
+function init() {
+  loadFromStorage();
+  setupTabNavigation();
+  setupAnalysisHandlers();
+  setupSettingsHandlers();
+  updateMockBanner();
+  updateContextIndicator();
+  updateUsageDisplay();
+  checkOnboarding();
+}
+
+// ── Storage Operations ───────────────────────────────────
+function loadFromStorage() {
+  try {
+    const stored = localStorage.getItem(STORAGE_PROFILES);
+    if (stored) {
+      profiles = JSON.parse(stored);
+    } else {
+      profiles = [
+        {
+          id: 'default-1',
+          name: '웹 개발 프로젝트',
+          role: '시니어 프론트엔드 개발자',
+          domain: '에듀테크',
+          techStack: ['React', 'TypeScript', 'Tailwind', 'Node.js', 'PostgreSQL'],
+          preferences: '코드는 TypeScript, 설명은 한국어, 간결하게',
+          customContext: 'pnpm monorepo 구조 사용, ESLint + Prettier 적용',
+          isActive: true,
+        },
+        {
+          id: 'default-2',
+          name: '마케팅 업무',
+          role: '콘텐츠 마케터',
+          domain: 'SaaS',
+          techStack: ['SEO', 'Google Analytics', '블로그'],
+          preferences: '한국어, 전문적이면서 친근한 톤',
+          customContext: '',
+          isActive: false,
+        },
+      ];
+      saveProfilesToStorage();
+    }
+
+    const storedSettings = localStorage.getItem(STORAGE_SETTINGS);
+    if (storedSettings) {
+      settings = { ...settings, ...JSON.parse(storedSettings) };
+    }
+
+    syncSettingsUI();
+  } catch (e) {
+    console.error('Failed to load from storage:', e);
+  }
+}
+
+function saveProfilesToStorage() {
+  localStorage.setItem(STORAGE_PROFILES, JSON.stringify(profiles));
+}
+
+function saveSettings() {
+  settings.model = document.getElementById('settingsModel').value;
+  settings.costCheckEnabled = document.getElementById('costCheckToggle').checked;
+  settings.dailyBudget = parseFloat(document.getElementById('dailyBudget').value) || 1.00;
+  settings.autoApproveThreshold = parseFloat(document.getElementById('autoApproveThreshold').value) || 0.01;
+
+  localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(settings));
+  showToast('설정이 저장되었습니다.');
+}
+
+function syncSettingsUI() {
+  document.getElementById('settingsModel').value = settings.model;
+  document.getElementById('costCheckToggle').checked = settings.costCheckEnabled;
+  document.getElementById('dailyBudget').value = settings.dailyBudget.toFixed(2);
+  document.getElementById('autoApproveThreshold').value = settings.autoApproveThreshold.toFixed(3);
+}
+
+// ── API Key Management ───────────────────────────────────
+function getApiKey() {
+  return localStorage.getItem(STORAGE_API_KEY) || null;
+}
+
+function setApiKey(key) {
+  if (key) {
+    localStorage.setItem(STORAGE_API_KEY, key);
+  } else {
+    localStorage.removeItem(STORAGE_API_KEY);
+  }
+  updateApiKeyStatus();
+  updateMockBanner();
+}
+
+function updateApiKeyStatus() {
+  const apiKey = getApiKey();
+  const statusEl = document.getElementById('apiKeyStatus');
+  const inputEl = document.getElementById('settingsApiKey');
+
+  if (apiKey) {
+    statusEl.textContent = '✓ API 키가 저장되어 있습니다.';
+    statusEl.style.color = 'var(--c-green)';
+    inputEl.value = '*'.repeat(Math.max(apiKey.length - 8, 8)) + apiKey.slice(-8);
+  } else {
+    statusEl.textContent = '⚠ API 키가 없습니다. 검증 버튼을 눌러 저장하세요.';
+    statusEl.style.color = 'var(--c-orange)';
+    inputEl.value = '';
+  }
+}
+
+function toggleApiKeyVisibility() {
+  const input = document.getElementById('settingsApiKey');
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+}
+
+function validateApiKey() {
+  const keyInput = document.getElementById('settingsApiKey').value.trim();
+  const currentKey = getApiKey();
+
+  let keyToValidate = keyInput;
+  if (keyInput.startsWith('*')) {
+    keyToValidate = currentKey;
+  }
+
+  if (!keyToValidate) {
+    showToast('API 키를 입력하세요.');
+    return;
+  }
+
+  if (!keyToValidate.startsWith('sk-ant-')) {
+    showToast('유효한 Anthropic API 키가 아닙니다. (sk-ant-... 형식)');
+    return;
+  }
+
+  setApiKey(keyToValidate);
+  showToast('API 키가 검증되고 저장되었습니다.');
+  updateApiKeyStatus();
+  updateMockBanner();
+}
+
+function deleteApiKey() {
+  if (confirm('API 키를 삭제하시겠습니까? Mock 모드로 전환됩니다.')) {
+    setApiKey(null);
+    document.getElementById('settingsApiKey').value = '';
+    showToast('API 키가 삭제되었습니다.');
+    updateMockBanner();
+  }
+}
+
+// ── Mock Banner ──────────────────────────────────────────
+function updateMockBanner() {
+  const banner = document.getElementById('mockBanner');
+  const hasApiKey = !!getApiKey();
+  banner.classList.toggle('hidden', hasApiKey);
+}
+
+// ── Tab Navigation ──────────────────────────────────────
+function setupTabNavigation() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const page = tab.dataset.tab;
+      document.getElementById('page-analyze').classList.toggle('hidden', page !== 'analyze');
+      document.getElementById('page-profiles').classList.toggle('hidden', page !== 'profiles');
+      document.getElementById('page-settings').classList.toggle('hidden', page !== 'settings');
+      if (page === 'profiles') renderProfiles();
+      if (page === 'settings') syncSettingsUI();
+    });
   });
-});
 
-document.getElementById('btnProfile').addEventListener('click', () => {
-  document.querySelector('[data-tab="profiles"]').click();
-});
+  document.getElementById('btnSettings').addEventListener('click', () => {
+    document.querySelector('[data-tab="settings"]').click();
+  });
 
-// ── Analysis ─────────────────────────────────────────────────
-document.getElementById('btnAnalyze').addEventListener('click', analyze);
-document.getElementById('promptInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) analyze();
-});
+  document.getElementById('btnProfile').addEventListener('click', () => {
+    document.querySelector('[data-tab="profiles"]').click();
+  });
+}
 
-async function analyze() {
+// ── Analysis ─────────────────────────────────────────────
+function setupAnalysisHandlers() {
+  document.getElementById('btnAnalyze').addEventListener('click', initiateAnalysis);
+  document.getElementById('promptInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) initiateAnalysis();
+  });
+}
+
+function initiateAnalysis() {
   const prompt = document.getElementById('promptInput').value.trim();
   if (!prompt) return;
 
+  const hasApiKey = !!getApiKey();
+  const shouldCheckCost = settings.costCheckEnabled && hasApiKey;
+
+  if (shouldCheckCost) {
+    pendingAnalysis = { prompt };
+    showCostConfirmation(prompt);
+  } else {
+    analyze(prompt);
+  }
+}
+
+function proceedWithAnalysis() {
+  if (pendingAnalysis) {
+    closeCostModal();
+    analyze(pendingAnalysis.prompt);
+    pendingAnalysis = null;
+  }
+}
+
+async function analyze(prompt) {
   const btn = document.getElementById('btnAnalyze');
   btn.disabled = true;
   document.getElementById('analysisResult').classList.add('hidden');
@@ -671,21 +1118,268 @@ async function analyze() {
   } : null;
 
   try {
-    const res = await fetch(`${API_URL}/api/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, context }),
-    });
-    const data = await res.json();
-    renderReport(data);
+    let result;
+    const hasApiKey = !!getApiKey();
+
+    if (hasApiKey) {
+      result = await analyzeWithClaude(prompt, context);
+    } else {
+      result = analyzeMock(prompt, context);
+    }
+
+    recordUsage(result.usage || { inputTokens: 0, outputTokens: 0, cost: 0 });
+    renderReport(result);
+    updateUsageDisplay();
   } catch (err) {
-    showToast('API 서버에 연결할 수 없습니다. 서버를 시작했는지 확인하세요.');
+    showToast('분석 중 오류가 발생했습니다: ' + err.message);
   } finally {
     btn.disabled = false;
     document.getElementById('loading').classList.add('hidden');
   }
 }
 
+async function analyzeWithClaude(prompt, context) {
+  const apiKey = getApiKey();
+  const model = settings.model;
+
+  // Build context string for system prompt
+  let contextStr = '';
+  if (context) {
+    contextStr = `\n\n사용자 프로필:\n`;
+    contextStr += `- 역할: ${context.role}\n`;
+    contextStr += `- 도메인: ${context.domain}\n`;
+    contextStr += `- 기술: ${context.techStack.join(', ')}\n`;
+    contextStr += `- 선호: ${context.preferences}\n`;
+    if (context.customContext) contextStr += `- 추가: ${context.customContext}\n`;
+  }
+
+  const systemPrompt = `당신은 프롬프트 분석 전문가입니다. 사용자가 AI에게 보낼 프롬프트를 받으면, 그 프롬프트를 AI의 관점에서 분석하여 다음 3가지 카테고리로 분류하세요.
+
+1. referenced: 프롬프트에서 명확히 이해한 용어와 개념 (각 항목: { "term": "용어", "explanation": "이해한 방식" })
+2. inferred: 명시되지 않았지만 추론한 맥락 (각 항목: { "term": "추론 내용", "explanation": "추론 근거", "confidence": "high|medium|low" })
+3. missing: 부재하거나 모호한 정보 (각 항목: { "field": "부재 정보명", "suggestion": "보충 가이드" })
+
+반드시 유효한 JSON 형식으로만 응답하세요. JSON 외 텍스트를 포함하지 마세요.${contextStr}`;
+
+  const userMessage = `이 프롬프트를 분석해주세요:\n\n${prompt}`;
+
+  const requestBody = {
+    model,
+    max_tokens: 1024,
+    system: systemPrompt,
+    messages: [
+      { role: 'user', content: userMessage }
+    ]
+  };
+
+  // Estimate tokens for cost calculation
+  const inputTokens = Math.ceil((systemPrompt.length + userMessage.length) * 0.25);
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const responseText = data.content[0].text;
+
+  // Extract JSON from response
+  let analysis;
+  try {
+    analysis = JSON.parse(responseText);
+  } catch (e) {
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      analysis = JSON.parse(jsonMatch[0]);
+    } else {
+      throw new Error('Invalid response format');
+    }
+  }
+
+  // Build enhanced prompt with context
+  let enhancedPrompt = prompt;
+  if (context) {
+    enhancedPrompt = `프로필: ${context.role} (${context.domain})\n기술: ${context.techStack.join(', ')}\n선호도: ${context.preferences}\n\n${prompt}`;
+  }
+  if (analysis.missing && analysis.missing.length > 0) {
+    enhancedPrompt += '\n\n추가 정보:\n';
+    analysis.missing.forEach(m => {
+      enhancedPrompt += `- ${m.field}: ${m.suggestion}\n`;
+    });
+  }
+
+  // Calculate actual cost
+  const outputTokens = data.usage.output_tokens;
+  const pricing = MODEL_PRICING[model];
+  const cost = (inputTokens * pricing.inputCost + outputTokens * pricing.outputCost) / 1_000_000;
+
+  return {
+    referenced: analysis.referenced || [],
+    inferred: analysis.inferred || [],
+    missing: analysis.missing || [],
+    enhancedPrompt,
+    usage: { inputTokens, outputTokens, cost }
+  };
+}
+
+function analyzeMock(prompt, context) {
+  const referenced = [];
+  const inferred = [];
+
+  // Match known terms
+  Object.entries(KNOWN_TERMS).forEach(([term, explanation]) => {
+    if (prompt.toLowerCase().includes(term.toLowerCase())) {
+      referenced.push({ term, explanation });
+    }
+  });
+
+  // Apply inference rules
+  INFERENCE_RULES.forEach(rule => {
+    if (rule.pattern.test(prompt)) {
+      inferred.push({
+        term: rule.inferred,
+        explanation: '프롬프트에서 추론함',
+        confidence: rule.confidence
+      });
+    }
+  });
+
+  // Apply missing info rules
+  const missing = [];
+  MISSING_INFO_RULES.forEach(rule => {
+    if (rule.pattern.test(prompt)) {
+      missing.push({
+        field: rule.missing,
+        suggestion: rule.suggestion,
+        autoFillable: false
+      });
+    }
+  });
+
+  // Build enhanced prompt
+  let enhancedPrompt = prompt;
+  if (context) {
+    enhancedPrompt = `프로필: ${context.role} (${context.domain})\n기술: ${context.techStack.join(', ')}\n선호도: ${context.preferences}\n\n${prompt}`;
+  }
+
+  return {
+    referenced,
+    inferred,
+    missing,
+    enhancedPrompt,
+    usage: { inputTokens: 0, outputTokens: 0, cost: 0 }
+  };
+}
+
+// ── Cost Confirmation ────────────────────────────────────
+function showCostConfirmation(prompt) {
+  const model = settings.model;
+  const pricing = MODEL_PRICING[model];
+
+  // Estimate tokens: Korean ~1.5 chars per token, English ~0.25 chars per token
+  const estimatedInputTokens = Math.ceil(prompt.length * 0.35);
+  const estimatedOutputTokens = Math.ceil(prompt.length * 0.7); // Assume output is ~2x input
+
+  const estimatedCost = (estimatedInputTokens * pricing.inputCost + estimatedOutputTokens * pricing.outputCost) / 1_000_000;
+
+  const dailyUsage = calculateDailyUsage();
+  const dailyBudget = settings.dailyBudget;
+  const projectedDaily = dailyUsage + estimatedCost;
+
+  // Check if cost is below auto-approve threshold
+  if (estimatedCost <= settings.autoApproveThreshold) {
+    proceedWithAnalysis();
+    return;
+  }
+
+  document.getElementById('costModalModel').textContent = model.includes('sonnet') ? 'Sonnet' : 'Haiku';
+  document.getElementById('costModalInputTokens').textContent = `~${estimatedInputTokens} 토큰`;
+  document.getElementById('costModalOutputTokens').textContent = `~${estimatedOutputTokens} 토큰`;
+  document.getElementById('costModalEstimate').textContent = `$${estimatedCost.toFixed(4)}`;
+  document.getElementById('costModalDaily').textContent = `$${dailyUsage.toFixed(4)} / $${dailyBudget.toFixed(2)}`;
+
+  document.getElementById('costModal').classList.remove('hidden');
+}
+
+function closeCostModal() {
+  document.getElementById('costModal').classList.add('hidden');
+}
+
+// ── Usage Tracking ───────────────────────────────────────
+function recordUsage(usage) {
+  const now = new Date();
+  const dateKey = now.toISOString().split('T')[0];
+
+  let records = [];
+  try {
+    const stored = localStorage.getItem(STORAGE_USAGE);
+    records = stored ? JSON.parse(stored) : [];
+  } catch (e) {}
+
+  records.push({
+    date: dateKey,
+    timestamp: now.getTime(),
+    inputTokens: usage.inputTokens || 0,
+    outputTokens: usage.outputTokens || 0,
+    cost: usage.cost || 0
+  });
+
+  localStorage.setItem(STORAGE_USAGE, JSON.stringify(records));
+}
+
+function calculateDailyUsage() {
+  const now = new Date();
+  const todayKey = now.toISOString().split('T')[0];
+
+  try {
+    const records = JSON.parse(localStorage.getItem(STORAGE_USAGE) || '[]');
+    return records
+      .filter(r => r.date === todayKey)
+      .reduce((sum, r) => sum + (r.cost || 0), 0);
+  } catch (e) {
+    return 0;
+  }
+}
+
+function updateUsageDisplay() {
+  const now = new Date();
+  try {
+    const records = JSON.parse(localStorage.getItem(STORAGE_USAGE) || '[]');
+
+    // Today
+    const todayKey = now.toISOString().split('T')[0];
+    const todayRecords = records.filter(r => r.date === todayKey);
+    const todayCost = todayRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
+    document.getElementById('usageToday').textContent = `${todayRecords.length} 분석 • $${todayCost.toFixed(4)}`;
+
+    // Week
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekStartKey = weekStart.toISOString().split('T')[0];
+    const weekRecords = records.filter(r => r.date >= weekStartKey);
+    const weekCost = weekRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
+    document.getElementById('usageWeek').textContent = `${weekRecords.length} 분석 • $${weekCost.toFixed(4)}`;
+
+    // Month
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStartKey = monthStart.toISOString().split('T')[0];
+    const monthRecords = records.filter(r => r.date >= monthStartKey);
+    const monthCost = monthRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
+    document.getElementById('usageMonth').textContent = `${monthRecords.length} 분석 • $${monthCost.toFixed(4)}`;
+  } catch (e) {}
+}
+
+// ── Report Rendering ─────────────────────────────────────
 function renderReport(data) {
   // Referenced (Green)
   const greenItems = document.getElementById('greenItems');
@@ -721,21 +1415,37 @@ function renderReport(data) {
   redItems.innerHTML = '';
   document.getElementById('redCount').textContent = data.missing.length;
   data.missing.forEach(item => {
-    const autoFill = item.autoFillable
-      ? `<span class="auto-fill-badge">&#10003; 프로필에서 자동 보충: ${escHtml(item.profileValue)}</span>`
-      : '';
     redItems.innerHTML += `
       <div class="report-item">
         <div class="dot" style="background: var(--c-red)"></div>
         <div>
           <span class="term">${escHtml(item.field)}</span> — <span class="desc">${escHtml(item.suggestion)}</span>
-          ${autoFill}
         </div>
       </div>`;
   });
 
   // Enhanced prompt
   document.getElementById('enhancedPromptText').textContent = data.enhancedPrompt;
+
+  // Usage stats
+  const usageStats = document.getElementById('usageStats');
+  if (data.usage && (data.usage.inputTokens > 0 || data.usage.outputTokens > 0)) {
+    usageStats.innerHTML = `
+      <div class="usage-stat-line">
+        <span class="usage-stat-label">입력 토큰</span>
+        <span class="usage-stat-value">${data.usage.inputTokens}</span>
+      </div>
+      <div class="usage-stat-line">
+        <span class="usage-stat-label">출력 토큰</span>
+        <span class="usage-stat-value">${data.usage.outputTokens}</span>
+      </div>
+      <div class="usage-stat-line">
+        <span class="usage-stat-label">비용</span>
+        <span class="usage-stat-value">$${data.usage.cost.toFixed(4)}</span>
+      </div>
+    `;
+    usageStats.classList.remove('hidden');
+  }
 
   document.getElementById('analysisResult').classList.remove('hidden');
 }
@@ -755,7 +1465,7 @@ function copyEnhancedPrompt() {
   });
 }
 
-// ── Profiles ─────────────────────────────────────────────────
+// ── Profiles ─────────────────────────────────────────────
 function renderProfiles() {
   const list = document.getElementById('profileList');
   list.innerHTML = '';
@@ -785,12 +1495,14 @@ function renderProfiles() {
 
 function activateProfile(id) {
   profiles.forEach(p => p.isActive = (p.id === id));
+  saveProfilesToStorage();
   renderProfiles();
   showToast('프로필이 활성화되었습니다.');
 }
 
 function deleteProfile(id) {
   profiles = profiles.filter(p => p.id !== id);
+  saveProfilesToStorage();
   renderProfiles();
   showToast('프로필이 삭제되었습니다.');
 }
@@ -845,6 +1557,7 @@ function saveProfile() {
     });
   }
 
+  saveProfilesToStorage();
   hideProfileForm();
   renderProfiles();
   showToast(editingProfileId ? '프로필이 수정되었습니다.' : '새 프로필이 추가되었습니다.');
@@ -861,7 +1574,23 @@ function updateContextIndicator() {
   }
 }
 
-// ── Toast ────────────────────────────────────────────────────
+// ── Settings Handlers ────────────────────────────────────
+function setupSettingsHandlers() {
+  // Handled by save button in HTML
+}
+
+// ── Onboarding ───────────────────────────────────────────
+function checkOnboarding() {
+  const hasApiKey = !!getApiKey();
+  const hasProfiles = profiles.length > 0;
+
+  if (!hasApiKey && hasProfiles) {
+    // User has profiles but no API key - show settings
+    // document.querySelector('[data-tab="settings"]').click();
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────
 function showToast(msg) {
   const toast = document.getElementById('toast');
   toast.textContent = msg;
@@ -869,15 +1598,15 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
-// ── Utils ────────────────────────────────────────────────────
+// ── Utils ────────────────────────────────────────────────
 function escHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
   return div.innerHTML;
 }
 
-// ── Init ─────────────────────────────────────────────────────
-updateContextIndicator();
+// ── Init ─────────────────────────────────────────────────
+init();
 </script>
 
 </body>

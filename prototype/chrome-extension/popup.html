@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <h1>PromptLens</h1>
+    <div class="header-icons">
+      <button id="btnSettings" title="Settings">&#9881;</button>
+      <button id="btnProfile" title="Profile">&#9787;</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-tab="analyze">&#128270; 분석</div>
+    <div class="tab" data-tab="profiles">&#128100; 프로필</div>
+    <div class="tab" data-tab="settings">&#9881; 설정</div>
+  </div>
+
+  <!-- Page: Analyze -->
+  <div id="page-analyze" class="content">
+    <!-- Mock mode banner -->
+    <div id="mockBanner" class="banner hidden">
+      Mock 모드 — API 키를 등록하면 Claude로 분석합니다
+    </div>
+
+    <!-- Active profile indicator -->
+    <div id="contextIndicator" class="context-indicator hidden">
+      <span class="dot-pulse"></span>
+      <span id="activeProfileName">웹 개발 프로젝트</span> 맥락 활성
+    </div>
+
+    <div class="input-group">
+      <label>프롬프트를 입력하세요</label>
+      <textarea id="promptInput" placeholder="예: React로 로그인 폼 만들어줘&#10;예: Python으로 REST API 서버 만들어줘&#10;예: 게시판 기능을 추가해줘"></textarea>
+    </div>
+    <button id="btnAnalyze" class="btn btn-primary">&#9889; 분석하기</button>
+
+    <!-- Loading -->
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <div class="loading-text">> analyzing prompt...</div>
+    </div>
+
+    <!-- Analysis Result -->
+    <div id="analysisResult" class="hidden">
+      <!-- Referenced -->
+      <div class="report-section section-green" id="sectionGreen">
+        <div class="report-header" id="headerGreen">
+          &#9989; 이해한 것 <span class="badge" id="greenCount">0</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="report-items" id="greenItems"></div>
+      </div>
+
+      <!-- Inferred -->
+      <div class="report-section section-yellow" id="sectionYellow">
+        <div class="report-header" id="headerYellow">
+          &#128161; 추론한 것 <span class="badge" id="yellowCount">0</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="report-items" id="yellowItems"></div>
+      </div>
+
+      <!-- Missing -->
+      <div class="report-section section-red" id="sectionRed">
+        <div class="report-header" id="headerRed">
+          &#10071; 부족한 것 <span class="badge" id="redCount">0</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="report-items" id="redItems"></div>
+      </div>
+
+      <!-- Enhanced Prompt -->
+      <div class="enhanced-prompt">
+        <div class="enhanced-prompt-header">&#9997; 보강된 프롬프트</div>
+        <pre id="enhancedPromptText"></pre>
+        <div id="usageStats" class="usage-stats hidden"></div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-sm" id="btnCopyPrompt">&#128203; 프롬프트 복사</button>
+        <button class="btn btn-primary btn-sm" id="btnSendAI">&#128640; AI에 전송</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page: Profiles -->
+  <div id="page-profiles" class="content hidden">
+    <div id="profileList"></div>
+    <button class="btn btn-primary" id="btnNewProfile">+ 새 프로필</button>
+
+    <!-- Profile Form -->
+    <div id="profileForm" class="hidden" style="margin-top: 16px;">
+      <div class="divider"></div>
+      <div class="form-group">
+        <label>프로필 이름</label>
+        <input id="pf-name" placeholder="예: 웹 개발 프로젝트" />
+      </div>
+      <div class="form-group">
+        <label>역할</label>
+        <input id="pf-role" placeholder="예: 시니어 백엔드 개발자" />
+      </div>
+      <div class="form-group">
+        <label>도메인</label>
+        <input id="pf-domain" placeholder="예: 핀테크, 에듀테크" />
+      </div>
+      <div class="form-group">
+        <label>기술 스택 (쉼표 구분)</label>
+        <input id="pf-tech" placeholder="예: React, TypeScript, Node.js, PostgreSQL" />
+      </div>
+      <div class="form-group">
+        <label>선호 스타일</label>
+        <input id="pf-prefs" placeholder="예: 코드는 TypeScript, 설명은 한국어" />
+      </div>
+      <div class="form-group">
+        <label>추가 맥락</label>
+        <textarea id="pf-custom" placeholder="자유롭게 입력하세요"></textarea>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-sm" id="btnCancelProfile">취소</button>
+        <button class="btn btn-primary btn-sm" id="btnSaveProfile">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page: Settings -->
+  <div id="page-settings" class="content hidden">
+    <!-- API Key Section -->
+    <div class="form-group">
+      <label style="color: var(--c-green);">&#128273; API 키</label>
+      <div style="display: flex; gap: 6px; margin-top: 8px;">
+        <input id="settingsApiKey" type="password" placeholder="sk-ant-..." style="flex: 1;" />
+        <button class="btn btn-secondary btn-sm" id="btnToggleKeyVis">&#128065;</button>
+      </div>
+      <div style="font-size: 10px; color: var(--c-text-dim); margin-top: 4px;">
+        키는 이 브라우저에만 저장됩니다 (chrome.storage)
+      </div>
+      <div style="display: flex; gap: 6px; margin-top: 8px;">
+        <button class="btn btn-secondary btn-sm" id="btnValidateKey">검증</button>
+        <button class="btn btn-secondary btn-sm" id="btnDeleteKey" style="color: var(--c-red);">삭제</button>
+      </div>
+      <div id="apiKeyStatus" style="font-size: 10px; margin-top: 6px; color: var(--c-text-dim);"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Model Selection -->
+    <div class="form-group">
+      <label>&#128203; 모델</label>
+      <select id="settingsModel" style="margin-top: 8px;">
+        <option value="claude-sonnet-4-6">claude-sonnet-4-6 (기본)</option>
+        <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+      </select>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Cost Control -->
+    <div class="form-group">
+      <label style="color: var(--c-yellow);">&#128176; 비용 제어</label>
+
+      <div class="toggle-switch" style="margin-top: 12px;">
+        <input type="checkbox" id="costCheckToggle" checked />
+        <label for="costCheckToggle">분석 전 비용 확인</label>
+      </div>
+
+      <label style="font-size: 11px; margin-top: 12px;">일일 예산</label>
+      <div style="display: flex; gap: 4px; margin-top: 6px;">
+        <span style="color: var(--c-text-dim);">$</span>
+        <input id="dailyBudget" type="number" step="0.01" min="0" placeholder="1.00" style="flex: 1;" />
+      </div>
+
+      <label style="font-size: 11px; margin-top: 12px;">자동 승인 한도</label>
+      <div style="display: flex; gap: 4px; margin-top: 6px;">
+        <span style="color: var(--c-text-dim);">$</span>
+        <input id="autoApproveThreshold" type="number" step="0.001" min="0" placeholder="0.01" style="flex: 1;" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Usage Display -->
+    <div class="form-group">
+      <label style="color: var(--c-cyan);">&#128202; 사용량</label>
+      <div style="margin-top: 12px; font-size: 11px;">
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; color: var(--c-text-dim);">
+          <span>오늘</span>
+          <span id="usageToday" style="color: var(--c-text);">0 분석 &bull; $0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; color: var(--c-text-dim);">
+          <span>이번 주</span>
+          <span id="usageWeek" style="color: var(--c-text);">0 분석 &bull; $0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; color: var(--c-text-dim);">
+          <span>이번 달</span>
+          <span id="usageMonth" style="color: var(--c-text);">0 분석 &bull; $0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Settings -->
+    <div class="btn-group" style="margin-top: 16px;">
+      <button class="btn btn-primary btn-sm" id="btnSaveSettings">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Cost Confirmation Modal -->
+<div id="costModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">&#128176; 비용 확인</div>
+    <div class="modal-content">
+      <div class="modal-field">
+        <span class="modal-field-label">모델</span>
+        <span class="modal-field-value" id="costModalModel">Sonnet</span>
+      </div>
+      <div class="modal-field">
+        <span class="modal-field-label">예상 입력</span>
+        <span class="modal-field-value" id="costModalInputTokens">~250 토큰</span>
+      </div>
+      <div class="modal-field">
+        <span class="modal-field-label">예상 출력</span>
+        <span class="modal-field-value" id="costModalOutputTokens">~500 토큰</span>
+      </div>
+      <div class="modal-field">
+        <span class="modal-field-label">예상 비용</span>
+        <span class="modal-field-value" id="costModalEstimate">$0.003</span>
+      </div>
+      <div class="modal-field" style="background: rgba(145, 179, 98, 0.08); padding: 6px; margin: 8px -6px 0;">
+        <span class="modal-field-label">오늘 누적</span>
+        <span class="modal-field-value" id="costModalDaily">$0.05 / $1.00</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" id="btnCostCancel">취소</button>
+      <button class="btn btn-primary btn-sm" id="btnCostProceed">분석 실행</button>
+    </div>
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

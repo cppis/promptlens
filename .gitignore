@@ -1,1 +1,5 @@
 .vscode/
+node_modules/
+prototype/visualization/dist/
+prototype/visualization/extension-dist/
+*.bak
