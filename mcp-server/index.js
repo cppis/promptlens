@@ -72,6 +72,8 @@ TRIGGER RULES — call this tool automatically when:
   },
   async ({ prompt, mode, projectId, tags, parentId, autoRun }) => {
     const analysisMode = mode || 'local';
+    // projectId가 없으면 활성 프로젝트로 자동 폴백 — entryId를 항상 발급받기 위함
+    const effectiveProjectId = projectId || storage.getActiveProject() || null;
     let result;
 
     if (analysisMode === 'api') {
@@ -106,10 +108,10 @@ TRIGGER RULES — call this tool automatically when:
       result = analyzePrompt(prompt);
     }
 
-    // Save to history if projectId provided
+    // Save to history if effectiveProjectId is available (explicit or active project fallback)
     let savedEntry = null;
-    if (projectId) {
-      savedEntry = await storage.addHistoryEntry(projectId, {
+    if (effectiveProjectId) {
+      savedEntry = await storage.addHistoryEntry(effectiveProjectId, {
         prompt,
         enhanced: result.enhancedPrompt || result.enhanced || '',
         score: result.score,
@@ -447,12 +449,24 @@ server.tool(
 // ─────────────────────────────────────────────
 server.tool(
   'get_settings',
-  'View current PromptLens settings: API key status, preferred model, storage location.',
+  `View current PromptLens settings: API key status, preferred model, active project, storage location.
+
+TRIGGER RULES — call this tool when:
+- User says "PromptLens 설정 보여줘" / "show PromptLens settings"
+- User says "지금 활성 프로젝트가 뭐야?" / "what is the active project?" / "현재 활성 프로젝트 알려줘"
+- User says "현재 설정 확인" / "check current settings"
+- User says "API 키 등록됐어?" / "is API key set?"`,
   {},
   async () => {
     const apiKey = storage.getApiKey();
     const model = storage.getModel();
-    const settings = storage.getSettings();
+    const activeProjectId = storage.getActiveProject();
+    let activeProjectName = null;
+    if (activeProjectId) {
+      const projects = await storage.getProjects();
+      const p = projects.find(p => p.id === activeProjectId);
+      activeProjectName = p ? p.name : null;
+    }
 
     return {
       content: [{
@@ -461,12 +475,90 @@ server.tool(
           apiKeyStatus: apiKey ? 'registered' : 'not set',
           maskedKey: apiKey ? apiKey.slice(0, 10) + '...' + apiKey.slice(-4) : null,
           model,
-          storagePath: '~/.promptlens/data.json',
+          activeProject: activeProjectId
+            ? { id: activeProjectId, name: activeProjectName }
+            : null,
+          storagePath: '~/.promptlens/projects/',
           settingsPath: '~/.promptlens/settings.json',
           availableModes: {
             local: 'Free, instant, rule-based 5-axis scoring (always available)',
             api: apiKey ? 'Claude API 3-color report (Referenced/Inferred/Missing)' : 'Requires API key — use set_api_key first'
           }
+        }, null, 2)
+      }]
+    };
+  }
+);
+
+// ─────────────────────────────────────────────
+// Tool: set_active_project
+// ─────────────────────────────────────────────
+server.tool(
+  'set_active_project',
+  `Set, clear, or get the active project. When an active project is set, analyze_prompt automatically saves results to that project even if no projectId is specified — so you get an entryId every time without repeating the project name.
+
+TRIGGER RULES — call this tool automatically when:
+
+[SET — action: "set"]
+- User says "활성 프로젝트를 '프로젝트명'으로 설정해줘" / "set active project to '...'"
+- User says "기본 프로젝트를 '프로젝트명'으로 해줘" / "default project: '...'"
+- User says "'프로젝트명' 프로젝트로 바꿔줘" / "switch to project '...'"
+- User says "'프로젝트명'을 기본으로 써줘" / "use '...' as default project"
+
+[CLEAR — action: "clear"]
+- User says "활성 프로젝트 해제해줘" / "clear active project" / "기본 프로젝트 없애줘"
+- User says "활성 프로젝트 초기화해줘" / "reset active project"
+
+[GET — action: "get"]
+- User says "지금 활성 프로젝트가 뭐야?" / "현재 활성 프로젝트가 뭐야?" / "활성 프로젝트 알려줘"
+- User says "what is the active project?" / "which project is active?" / "show active project"
+- User says "지금 어떤 프로젝트야?" / "현재 프로젝트 뭐야?" / "기본 프로젝트가 뭐야?"`,
+  {
+    action:      z.enum(['set', 'clear', 'get']).describe('"set" to assign a project, "clear" to remove, "get" to check current'),
+    projectName: z.string().optional().describe('Project name (required for action: "set")')
+  },
+  async ({ action, projectName }) => {
+    if (action === 'get') {
+      const id = storage.getActiveProject();
+      if (!id) {
+        return { content: [{ type: 'text', text: JSON.stringify({ activeProject: null, message: '활성 프로젝트가 설정되지 않았습니다.' }, null, 2) }] };
+      }
+      const projects = await storage.getProjects();
+      const p = projects.find(p => p.id === id);
+      return { content: [{ type: 'text', text: JSON.stringify({ activeProject: { id, name: p ? p.name : '(삭제된 프로젝트)' } }, null, 2) }] };
+    }
+
+    if (action === 'clear') {
+      storage.clearActiveProject();
+      return { content: [{ type: 'text', text: JSON.stringify({ message: '활성 프로젝트가 해제되었습니다.' }, null, 2) }] };
+    }
+
+    // action === 'set'
+    if (!projectName) {
+      return { content: [{ type: 'text', text: JSON.stringify({ error: 'projectName is required for action: "set"' }, null, 2) }] };
+    }
+    const projects = await storage.getProjects();
+    const project = projects.find(p =>
+      p.name.toLowerCase() === projectName.toLowerCase() || p.id === projectName
+    );
+    if (!project) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            error: `Project "${projectName}" not found.`,
+            availableProjects: projects.map(p => ({ id: p.id, name: p.name }))
+          }, null, 2)
+        }]
+      };
+    }
+    storage.setActiveProject(project.id);
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          message: `활성 프로젝트가 "${project.name}"으로 설정되었습니다. 이제 >> 분석 실행 시 자동으로 이 프로젝트에 저장됩니다.`,
+          activeProject: { id: project.id, name: project.name }
         }, null, 2)
       }]
     };

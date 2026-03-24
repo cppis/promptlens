@@ -103,6 +103,14 @@ before(async () => {
     }
     getModel()     { return this.getSettings().model || 'claude-sonnet-4-5-20250514'; }
     setModel(m)    { this.saveSettings({ model: m }); }
+
+    getActiveProject()     { return this.getSettings().activeProjectId || null; }
+    setActiveProject(id)   { this.saveSettings({ activeProjectId: id }); }
+    clearActiveProject()   {
+      const s = this.getSettings();
+      delete s.activeProjectId;
+      fs.writeFileSync(TEST_SETTINGS, JSON.stringify(s, null, 2), 'utf-8');
+    }
   };
 });
 
@@ -327,6 +335,18 @@ describe('Storage — Settings', () => {
     assert.equal(s.getModel(), 'claude-sonnet-4-5-20250514');
     s.setModel('claude-3-5-haiku-20241022');
     assert.equal(s.getModel(), 'claude-3-5-haiku-20241022');
+  });
+
+  it('manages active project (set / get / clear)', async () => {
+    const s = new Storage();
+    assert.equal(s.getActiveProject(), null);
+
+    const p = await s.createProject('ActiveTest');
+    s.setActiveProject(p.id);
+    assert.equal(s.getActiveProject(), p.id);
+
+    s.clearActiveProject();
+    assert.equal(s.getActiveProject(), null);
   });
 });
 

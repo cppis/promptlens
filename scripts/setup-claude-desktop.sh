@@ -52,17 +52,24 @@ get_server_path() {
   echo "$(cd "$script_dir/../mcp-server" && pwd)/index.js"
 }
 
+# ── WSL 환경 감지 ──
+is_wsl() {
+  grep -qi microsoft /proc/version 2>/dev/null
+}
+
 # ── JSON 처리 (node 사용) ──
 merge_config() {
   local config_file="$1"
   local mode="$2"
   local server_path="$3"
+  local is_wsl_env="$4"
 
   node -e "
     const fs = require('fs');
     const configPath = '$config_file';
     const mode = '$mode';
     const serverPath = '$server_path';
+    const isWsl = '$is_wsl_env' === 'true';
 
     // 기존 config 읽기 (없으면 빈 객체)
     let config = {};
@@ -73,15 +80,32 @@ merge_config() {
     if (!config.mcpServers) config.mcpServers = {};
 
     if (mode === 'npx') {
-      config.mcpServers.promptlens = {
-        command: 'npx',
-        args: ['-y', 'promptlens-mcp']
-      };
+      if (isWsl) {
+        // WSL: Windows 쪽 Claude Desktop이 wsl 명령어로 npx를 호출하도록 설정
+        config.mcpServers.promptlens = {
+          command: 'wsl',
+          args: ['npx', '-y', 'promptlens-mcp']
+        };
+      } else {
+        config.mcpServers.promptlens = {
+          command: 'npx',
+          args: ['-y', 'promptlens-mcp']
+        };
+      }
     } else {
-      config.mcpServers.promptlens = {
-        command: 'node',
-        args: [serverPath]
-      };
+      if (isWsl) {
+        // WSL: Windows 쪽 Claude Desktop이 wsl 명령어로 node를 호출하도록 설정
+        // WSL 리눅스 경로를 그대로 사용 (wsl 내부에서 해석됨)
+        config.mcpServers.promptlens = {
+          command: 'wsl',
+          args: ['node', serverPath]
+        };
+      } else {
+        config.mcpServers.promptlens = {
+          command: 'node',
+          args: [serverPath]
+        };
+      }
     }
 
     // 디렉토리 생성
@@ -128,10 +152,19 @@ fi
 
 CONFIG_PATH=$(detect_config_path)
 
+# WSL 환경 감지
+WSL_ENV="false"
+if is_wsl; then
+  WSL_ENV="true"
+fi
+
 echo ""
 echo -e "${GREEN}PromptLens — Claude Desktop MCP 설정${NC}"
 echo ""
 echo -e "  config: ${YELLOW}${CONFIG_PATH}${NC}"
+if [ "$WSL_ENV" = "true" ]; then
+  echo -e "  환경:   ${YELLOW}WSL (Windows 쪽 Claude Desktop에 wsl 명령어로 연결)${NC}"
+fi
 
 if [ "$MODE" = "remove" ]; then
   echo -e "  작업:   ${RED}설정 제거${NC}"
@@ -145,7 +178,7 @@ fi
 if [ "$MODE" = "npx" ]; then
   echo -e "  모드:   npx (배포 버전)"
   echo ""
-  RESULT=$(merge_config "$CONFIG_PATH" "npx" "")
+  RESULT=$(merge_config "$CONFIG_PATH" "npx" "" "$WSL_ENV")
 else
   SERVER_PATH=$(get_server_path)
   if [ ! -f "$SERVER_PATH" ]; then
@@ -156,8 +189,11 @@ else
   fi
   echo -e "  모드:   local (소스 직접 실행)"
   echo -e "  서버:   ${YELLOW}${SERVER_PATH}${NC}"
+  if [ "$WSL_ENV" = "true" ]; then
+    echo -e "  실행:   ${YELLOW}wsl node ${SERVER_PATH}${NC}"
+  fi
   echo ""
-  RESULT=$(merge_config "$CONFIG_PATH" "local" "$SERVER_PATH")
+  RESULT=$(merge_config "$CONFIG_PATH" "local" "$SERVER_PATH" "$WSL_ENV")
 fi
 
 echo -e "  설정 내용:"

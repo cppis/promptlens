@@ -366,4 +366,13 @@ export class Storage {
   removeApiKey()   { const s = this.getSettings(); delete s.apiKey; writeAtomic(SETTINGS_FILE, s); }
   getModel()       { return this.getSettings().model || 'claude-sonnet-4-5-20250514'; }
   setModel(m)      { this.saveSettings({ model: m }); }
+
+  // 활성 프로젝트 — projectId를 지정하지 않아도 자동으로 저장할 대상 프로젝트
+  getActiveProject() { return this.getSettings().activeProjectId || null; }
+  setActiveProject(projectId) { this.saveSettings({ activeProjectId: projectId }); }
+  clearActiveProject() {
+    const s = this.getSettings();
+    delete s.activeProjectId;
+    writeAtomic(SETTINGS_FILE, s);
+  }
 }
