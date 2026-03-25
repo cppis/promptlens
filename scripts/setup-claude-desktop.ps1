@@ -262,4 +262,4 @@ Write-Info '  Saved config:'
 $plConfig | ConvertTo-Json -Depth 5 | ForEach-Object { Write-Host "    $_" }
 Write-Host ''
 Write-OK 'Done. Restart Claude Desktop.'
-Write-Host ''                    
+Write-Host ''
