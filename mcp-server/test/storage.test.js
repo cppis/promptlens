@@ -374,3 +374,4 @@ describe('Storage — Persistence', () => {
     assert.equal(s2.getApiKey(), 'sk-ant-persist-key');
   });
 });
+  

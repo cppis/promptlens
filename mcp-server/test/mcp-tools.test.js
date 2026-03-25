@@ -439,3 +439,4 @@ describe('MCP Tool — snapshot_project', () => {
     assert.ok(result !== null && result !== undefined);
   });
 });
+ 
