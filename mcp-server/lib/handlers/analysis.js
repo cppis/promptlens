@@ -2,8 +2,8 @@
  * 분석 및 평가 핸들러: analyze_prompt, compare_prompts, get_versions
  */
 import { readData, writeData, readSettings, generateEntryId } from '../storage.js';
-import { analyzeLocal } from '../analyzer.js';
-import { getLastEntryId, setLastEntryId } from '../session.js';
+import { analyzeLocal, buildEnhancedPrompt, buildEnhancedPromptBlock } from '../analyzer.js';
+import { getLastEntryId, pushRecentEntryId, getRecentEntryIdAt, getRecentEntryCount } from '../session.js';
 
 /**
  * analyze_prompt
@@ -14,14 +14,34 @@ export function analyzePrompt({ prompt, mode = 'local', autoRun = false, parentI
     throw new Error('analyze_prompt: prompt 파라미터가 필요합니다.');
   }
 
-  // >> re / >> v2 트리거 처리 — parentId 자동 참조
+  // 트리거 처리 — parentId 자동 참조
   let resolvedParentId = parentId;
   const trimmed = prompt.trim();
+
+  // >> re / >> v2: 직전 entryId 참조 (getRecentEntryIdAt(1)로 통일)
   const isReTrigger = /^>>\s*(re|재분석|v2)$/i.test(trimmed);
   if (isReTrigger) {
-    const lastId = getLastEntryId();
+    const lastId = getRecentEntryIdAt(1) ?? getLastEntryId();
     if (!lastId) return '⚠️ 세션 내 이전 entryId가 없습니다. 먼저 프롬프트를 분석해 주세요.';
-    return `직전 entryId \`${lastId}\` 를 parentId로 설정했습니다.\n새 프롬프트를 입력해 주세요 (parentId: ${lastId} 로 자동 연결됩니다).`;
+    return `직전 entryId \`${lastId}\` 를 parentId로 설정했습니다.\n새 프롬프트를 입력해 주세요 (parentId: \`${lastId}\` 로 자동 연결됩니다).`;
+  }
+
+  // >> last N: N번째 이전 entryId 참조
+  const lastMatch = /^>>\s*last\s+(\d+)$/i.exec(trimmed);
+  if (lastMatch) {
+    const n = parseInt(lastMatch[1], 10);
+    if (n < 1 || n > 10) {
+      return `⚠️ N은 1~10 사이여야 합니다. (입력값: ${n})`;
+    }
+    const targetId = getRecentEntryIdAt(n);
+    const count = getRecentEntryCount();
+    if (!targetId) {
+      return `⚠️ 세션 내 ${n}번째 이전 분석이 없습니다. (현재 ${count}건 기록됨)`;
+    }
+    return [
+      `${n}번째 이전 entryId \`${targetId}\` 를 parentId로 설정했습니다.`,
+      `새 프롬프트를 입력해 주세요 (parentId: \`${targetId}\` 로 자동 연결됩니다).`,
+    ].join('\n');
   }
 
   const settings = readSettings();
@@ -35,6 +55,10 @@ export function analyzePrompt({ prompt, mode = 'local', autoRun = false, parentI
   const analysis = analyzeLocal(prompt);
   const entryId = generateEntryId();
   const now = new Date().toISOString();
+
+  // 개선 프롬프트 생성 (점수 < 80인 경우만)
+  const enhancedPrompt = buildEnhancedPrompt(prompt, analysis.missingElements, analysis.totalScore);
+  const enhancedPromptBlock = buildEnhancedPromptBlock(enhancedPrompt, entryId);
 
   // 태그 처리
   let finalTags = [...(tags || [])];
@@ -52,6 +76,7 @@ export function analyzePrompt({ prompt, mode = 'local', autoRun = false, parentI
     grade: analysis.grade,
     scores: analysis.scores,
     missingElements: analysis.missingElements,
+    enhancedPrompt: enhancedPrompt || null,
     tags: finalTags,
     suggestedTags: analysis.suggestedTags,
     mode,
@@ -67,7 +92,7 @@ export function analyzePrompt({ prompt, mode = 'local', autoRun = false, parentI
     writeData(data);
   }
 
-  setLastEntryId(entryId);
+  pushRecentEntryId(entryId);
 
   // ── 결과 포맷팅 ──────────────────────────────────────────
   const bar = (score) => {
@@ -94,6 +119,10 @@ export function analyzePrompt({ prompt, mode = 'local', autoRun = false, parentI
 
   if (analysis.suggestedTags.length > 0) {
     result += `**추천 태그:** ${analysis.suggestedTags.join(' ')}\n\n`;
+  }
+
+  if (enhancedPromptBlock) {
+    result += `\n${enhancedPromptBlock}\n\n`;
   }
 
   if (resolvedProjectId && data.projects[resolvedProjectId]) {

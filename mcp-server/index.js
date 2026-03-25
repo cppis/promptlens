@@ -10,6 +10,10 @@
  *   히스토리:  add_history_entry, get_history, query_history
  *   내보내기:  visualize_project, export_project, import_project, import_claude_conversations
  *   설정/통계: get_settings, set_api_key, get_stats
+ *
+ * 6개 MCP Prompts 프리셋 (Claude Desktop "/" 메뉴에서 접근):
+ *   범용:      quick-analyze, deep-analyze, project-report
+ *   도메인:    code-review, doc-writing, system-design
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -154,6 +158,161 @@ server.tool('set_api_key', 'Anthropic API 키를 등록합니다. 등록 후 api
 }, async ({ apiKey, model }) => safe(() => setApiKey({ apiKey, model })));
 
 server.tool('get_stats', '전체 통계(프로젝트 수, 총 프롬프트 수, 평균 점수, 최근 추세)를 반환합니다.', {}, async () => safe(getStats));
+
+// ── MCP Prompts 프리셋 ────────────────────────────────────────────────────
+// Claude Desktop "/" 메뉴에서 접근 가능한 프롬프트 템플릿.
+// 범용 3종 + 도메인 특화 3종 (code-review, doc-writing, system-design)
+
+server.prompt(
+  'quick-analyze',
+  '프롬프트를 빠르게 5축 분석합니다 (local 모드)',
+  { prompt: z.string().describe('분석할 프롬프트') },
+  async ({ prompt }) => ({
+    messages: [{
+      role: 'user',
+      content: { type: 'text', text: `다음 프롬프트를 analyze_prompt 도구로 분석해 주세요.\n\n프롬프트:\n${prompt}` },
+    }],
+  })
+);
+
+server.prompt(
+  'deep-analyze',
+  '프롬프트를 API 모드로 정밀 분석합니다 (API 키 필요)',
+  { prompt: z.string().describe('분석할 프롬프트') },
+  async ({ prompt }) => ({
+    messages: [{
+      role: 'user',
+      content: { type: 'text', text: `다음 프롬프트를 analyze_prompt 도구로 mode="deep" 옵션을 사용해 정밀 분석해 주세요.\n\n프롬프트:\n${prompt}` },
+    }],
+  })
+);
+
+server.prompt(
+  'project-report',
+  '활성 프로젝트의 전체 분석 리포트를 생성합니다',
+  { projectId: z.string().optional().describe('프로젝트 ID (생략 시 활성 프로젝트)') },
+  async ({ projectId }) => ({
+    messages: [{
+      role: 'user',
+      content: {
+        type: 'text',
+        text: [
+          '다음 순서로 프로젝트 리포트를 만들어 주세요:',
+          '1. get_stats 로 전체 통계 조회',
+          projectId ? `2. visualize_project 로 projectId="${projectId}" 대시보드 생성` : '2. visualize_project 로 활성 프로젝트 대시보드 생성',
+          '3. 결과를 요약해서 인사이트를 제공해 주세요',
+        ].join('\n'),
+      },
+    }],
+  })
+);
+
+// ── 도메인 특화 프리셋 ────────────────────────────────────────────────────
+
+server.prompt(
+  'code-review',
+  '코드 리뷰 요청 프롬프트를 작성하고 품질을 분석합니다',
+  {
+    language: z.string().describe('프로그래밍 언어 (예: Go, C#, TypeScript)'),
+    context: z.string().optional().describe('코드 또는 리뷰 목적 설명'),
+  },
+  async ({ language, context }) => {
+    const basePrompt = [
+      `당신은 ${language} 전문 시니어 개발자입니다.`,
+      context
+        ? `다음 코드를 리뷰해 주세요:\n\n${context}`
+        : `[리뷰할 코드를 여기에 붙여넣으세요]`,
+      '',
+      '리뷰 항목:',
+      '1. 버그 및 잠재적 오류',
+      '2. 코드 가독성 및 네이밍',
+      '3. 성능 최적화 포인트',
+      '4. 보안 취약점',
+      '5. 개선 제안 (코드 예시 포함)',
+      '',
+      '출력 형식: 항목별 번호 목록, 개선 코드는 코드 블록(```언어명```)으로 제시해 주세요.',
+    ].join('\n');
+
+    return {
+      messages: [{
+        role: 'user',
+        content: {
+          type: 'text',
+          text: `다음 프롬프트를 analyze_prompt 도구로 분석하고, 개선된 버전도 함께 제공해 주세요.\n\n프롬프트:\n${basePrompt}`,
+        },
+      }],
+    };
+  }
+);
+
+server.prompt(
+  'doc-writing',
+  '기술 문서 작성 프롬프트를 작성하고 품질을 분석합니다',
+  {
+    docType: z.string().describe('문서 유형 (예: API 문서, 아키텍처 설계서, README)'),
+    audience: z.string().optional().describe('독자 대상 (예: 팀 내 개발자, 외부 사용자)'),
+  },
+  async ({ docType, audience }) => {
+    const basePrompt = [
+      `당신은 기술 문서 전문 작가입니다.`,
+      `${docType}를 작성해 주세요.`,
+      audience ? `독자 대상: ${audience}` : '',
+      '',
+      '작성 기준:',
+      '- 명확하고 간결한 문장 사용',
+      '- 코드 예시와 다이어그램(Mermaid) 포함',
+      '- 목차(Table of Contents) 제공',
+      '- 초보자도 이해할 수 있는 설명 수준',
+      '',
+      '출력 형식: Markdown 형식, 섹션별 헤더(##) 구분',
+    ].filter(Boolean).join('\n');
+
+    return {
+      messages: [{
+        role: 'user',
+        content: {
+          type: 'text',
+          text: `다음 프롬프트를 analyze_prompt 도구로 분석하고, 개선된 버전도 함께 제공해 주세요.\n\n프롬프트:\n${basePrompt}`,
+        },
+      }],
+    };
+  }
+);
+
+server.prompt(
+  'system-design',
+  '시스템 설계 프롬프트를 작성하고 품질을 분석합니다',
+  {
+    system: z.string().describe('설계할 시스템 또는 기능 설명'),
+    constraints: z.string().optional().describe('제약 조건 (예: AWS, Go, 1만 동시 사용자)'),
+  },
+  async ({ system, constraints }) => {
+    const basePrompt = [
+      '당신은 시스템 아키텍트입니다.',
+      `${system} 시스템을 설계해 주세요.`,
+      constraints ? `제약 조건: ${constraints}` : '',
+      '',
+      '설계 항목:',
+      '1. 전체 아키텍처 개요 (Mermaid 다이어그램 포함)',
+      '2. 주요 컴포넌트와 역할',
+      '3. 데이터 흐름 및 API 인터페이스',
+      '4. 확장성 및 장애 대응 전략',
+      '5. 기술 스택 선택 이유',
+      '',
+      '출력 형식: 섹션별 Markdown, 다이어그램은 Mermaid 코드 블록으로 제공',
+    ].filter(Boolean).join('\n');
+
+    return {
+      messages: [{
+        role: 'user',
+        content: {
+          type: 'text',
+          text: `다음 프롬프트를 analyze_prompt 도구로 분석하고, 개선된 버전도 함께 제공해 주세요.\n\n프롬프트:\n${basePrompt}`,
+        },
+      }],
+    };
+  }
+);
 
 // ── 서버 시작 ──────────────────────────────────────────────────────────────
 const transport = new StdioServerTransport();

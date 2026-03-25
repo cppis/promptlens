@@ -158,6 +158,72 @@ export function analyzeLocal(prompt) {
 }
 
 /**
+ * 누락 요소를 기반으로 개선된 프롬프트를 규칙 기반으로 생성한다.
+ * 점수가 80 이상이면 null 반환 (이미 충분히 좋음).
+ *
+ * @param {string} prompt 원본 프롬프트
+ * @param {string[]} missingElements analyzeLocal의 missingElements
+ * @param {number} totalScore 종합 점수
+ * @returns {string|null}
+ */
+export function buildEnhancedPrompt(prompt, missingElements, totalScore) {
+  if (totalScore >= 80) return null;
+
+  const parts = [];
+
+  // 역할/페르소나가 누락된 경우 — 내용 기반으로 역할 추론
+  if (missingElements.some(m => m.includes('역할'))) {
+    let role = '전문가';
+    if (/코드|code|함수|function|프로그램|program|개발|develop/i.test(prompt)) role = '소프트웨어 개발자';
+    else if (/번역|translate/i.test(prompt)) role = '전문 번역가';
+    else if (/요약|summarize|summary/i.test(prompt)) role = '전문 편집자';
+    else if (/설계|design|아키텍처|architecture/i.test(prompt)) role = '시스템 아키텍트';
+    else if (/분석|analyze|analysis|데이터|data/i.test(prompt)) role = '데이터 분석가';
+    else if (/글|write|writing|작성|essay|article/i.test(prompt)) role = '전문 작가';
+    parts.push(`당신은 ${role}입니다.`);
+  }
+
+  // 원본 프롬프트 본문
+  parts.push(prompt.trim());
+
+  // 출력 형식이 누락된 경우 — 내용 기반으로 형식 제안
+  if (missingElements.some(m => m.includes('출력 형식'))) {
+    let format = '명확하고 구조화된 형식';
+    if (/코드|code|함수|function|구현|implement/i.test(prompt)) format = '코드 블록(```언어명```)과 함께 사용 예시 포함';
+    else if (/단계|step|순서|procedure/i.test(prompt)) format = '번호 목록(1. 2. 3.) 형식';
+    else if (/비교|compare|차이|versus|vs/i.test(prompt)) format = '표(table) 형식으로 항목별 비교';
+    else if (/목록|list|나열|enumerate/i.test(prompt)) format = '글머리 기호(•) 목록 형식';
+    parts.push(`\n출력 형식: ${format}으로 응답해 주세요.`);
+  }
+
+  // 배경 컨텍스트가 누락된 경우 — 플레이스홀더 제안
+  if (missingElements.some(m => m.includes('배경'))) {
+    parts.push(`\n참고 배경: [관련 배경 정보 또는 제약사항을 여기에 추가하세요]`);
+  }
+
+  return parts.join('\n\n');
+}
+
+/**
+ * 개선된 프롬프트를 사용자가 바로 복사할 수 있는 독립 블록으로 포맷한다.
+ *
+ * @param {string|null} enhancedPrompt buildEnhancedPrompt 반환값
+ * @param {string} entryId 저장된 엔트리 ID
+ * @returns {string|null}
+ */
+export function buildEnhancedPromptBlock(enhancedPrompt, entryId) {
+  if (!enhancedPrompt) return null;
+  const divider = '─'.repeat(48);
+  return [
+    '✨ 개선된 프롬프트 (복사해서 바로 사용하세요):',
+    divider,
+    enhancedPrompt,
+    divider,
+    entryId ? `entryId: \`${entryId}\`` : '',
+  ].filter(Boolean).join('\n');
+}
+
+/**
  * 점수 변화 요약 문자열 반환.
  */
 export function formatScoreDelta(before, after) {
