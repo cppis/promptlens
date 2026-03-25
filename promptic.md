@@ -85,7 +85,7 @@ npm에 publish된 후에는 설치 없이 npx로 실행할 수 있습니다.
   "mcpServers": {
     "promptic": {
       "command": "npx",
-      "args": ["-y", "promptic"]
+      "args": ["-y", "@cppis/promptic"]
     }
   }
 }

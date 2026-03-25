@@ -83,7 +83,7 @@ Once published to npm, no cloning is required.
   "mcpServers": {
     "prompatic": {
       "command": "npx",
-      "args": ["-y", "prompatic"]
+      "args": ["-y", "@cppis/promptic"]
     }
   }
 }
